@@ -1,0 +1,1 @@
+email_list = ["paola.gomes@sptech.school"]
