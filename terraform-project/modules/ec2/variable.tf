@@ -1,6 +1,7 @@
 variable "ami" {
   type        = string
-  description = "AMI ID"
+  description = "Ubuntu Server 22.04 LTS"
+  default     = "ami-0e001c9271cf7f3b9"
 }
 
 variable "a_zone" {
