@@ -29,3 +29,8 @@ variable "volume_type" {
   type        = string
   default     = "gp3"
 }
+
+variable "key_pair_name"{
+    type            = string
+    default         = "terraform_key"
+}
