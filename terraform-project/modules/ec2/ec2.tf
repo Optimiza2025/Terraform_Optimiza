@@ -1,3 +1,12 @@
+module "net" {
+    source = "../network"
+}
+
+resource "aws_key_pair" "generated_key"{
+    key_name = var.key_pair_name
+    public_key = file("terraform_key.pem.pub")
+}
+
 resource "aws_instance" "ec2-publica" {
   ami                         = var.ami
   availability_zone           = var.a_zone
