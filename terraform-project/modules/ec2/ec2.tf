@@ -31,10 +31,6 @@ resource "aws_instance" "ec2-publica" {
   tags = {
     Name = "ec2-publica-optimiza"
   }
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_instance" "ec2-privada" {
@@ -60,9 +56,5 @@ resource "aws_instance" "ec2-privada" {
 
   tags = {
     Name = "ec2-privada-optimiza"
-  }
-
-  lifecycle {
-    prevent_destroy = true
   }
 }

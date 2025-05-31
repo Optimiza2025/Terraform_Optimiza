@@ -6,8 +6,7 @@ import io
 s3 = boto3.client('s3')
 sns = boto3.client('sns')
 
-TOPICO_SNS_ARN = os.environ['SNS_TOPIC_ARN']
-bucket_destino = os.environ['BUCKET_DESTINO']
+TOPICO_SNS_ARN = os.environ.get('SNS_TOPIC_ARN','')
 
 colunas_tratadas = {
     "Card ID": "card_id",
@@ -33,6 +32,7 @@ colunas_tratadas = {
 def lambda_handler(event, context):
     bucket_origem = event['Records'][0]['s3']['bucket']['name']
     chave_arquivo = event['Records'][0]['s3']['object']['key']
+    bucket_destino = 'trusted-optimiza'
 
     try:
         response = s3.get_object(Bucket=bucket_origem, Key=chave_arquivo)
@@ -44,15 +44,16 @@ def lambda_handler(event, context):
             df_tratado['criado_em'] = pd.to_datetime(df_tratado['criado_em'], errors='coerce')
             df_tratado['criado_em'] = df_tratado['criado_em'].dt.strftime('%d/%m/%Y %H:%M').fillna('')
 
-        buffer = io.StringIO()
+        buffer = io.BytesIO()
         df_tratado.to_csv(buffer, index=False, sep=';', encoding='utf-8-sig')
+        buffer.seek(0)
 
         nome_arquivo_tratado = os.path.basename(chave_arquivo).replace('raw-', 'trusted-')
 
         s3.put_object(
             Bucket=bucket_destino,
             Key=nome_arquivo_tratado,
-            Body=buffer.getvalue()
+            Body=buffer.read()
         )
 
         mensagem = f"""
@@ -60,7 +61,7 @@ def lambda_handler(event, context):
 
 Olá,
 
-Seu arquivo foi processado e salvo com sucesso no bucket *{bucket_destino}*.
+Seu arquivo foi processado e salvo com sucesso no bucket *trusted-optimiza*.
 
 🔗 Local do arquivo: s3://{bucket_destino}/{nome_arquivo_tratado}
 
@@ -68,6 +69,7 @@ Atenciosamente,
 Equipe Optimiza 🚀
 """
 
+        # ✅ Publica no tópico SNS diretamente
         sns.publish(
             TopicArn=TOPICO_SNS_ARN,
             Message=mensagem.strip(),
@@ -86,3 +88,4 @@ Equipe Optimiza 🚀
             'statusCode': 500,
             'body': erro_msg
         }
+      
