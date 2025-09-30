@@ -10,7 +10,7 @@ resource "aws_lambda_function" "process_csv" {
   function_name = local.lambda_function_name
   handler       = "lambda_handler.lambda_handler"
   runtime       = "python3.9"
-  role          = "arn:aws:iam::531048931601:role/LabRole" #colocar o arn da role de Lab
+  role          = "arn:aws:iam::654654309976:role/LabRole" #colocar o arn da role de Lab
   filename      = "${path.module}/lambda_function/lambda.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda_function/lambda.zip")
   timeout       = 90

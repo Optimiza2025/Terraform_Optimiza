@@ -4,10 +4,10 @@ variable "ami" {
   default     = "ami-0e001c9271cf7f3b9"
 }
 
-variable "a_zone" {
-  type        = string
-  description = "Availability zone"
-  default     = "us-east-1a"
+variable "a_zones" {
+  type        = list(string)
+  description = "Availability zones"
+  default     = ["us-east-1a", "us-east-1b"]
 }
 
 variable "instance_type_public" {

@@ -32,7 +32,7 @@ colunas_tratadas = {
 def lambda_handler(event, context):
     bucket_origem = event['Records'][0]['s3']['bucket']['name']
     chave_arquivo = event['Records'][0]['s3']['object']['key']
-    bucket_destino = 'trusted-optimiza'
+    bucket_destino = 'trusted-optimiza-2025-2'
 
     try:
         response = s3.get_object(Bucket=bucket_origem, Key=chave_arquivo)

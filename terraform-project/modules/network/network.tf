@@ -29,31 +29,33 @@ resource "aws_eip" "nat-gateway-eip" {
 #NAT Gateway
 resource "aws_nat_gateway" "nat" {
   allocation_id             = aws_eip.nat-gateway-eip.id
-  subnet_id                 = aws_subnet.public_subnet.id
+  subnet_id                 = aws_subnet.public_subnet[0].id
   depends_on                = [aws_internet_gateway.igw]
   tags = {
     Name                    = "nat-optimiza"
   }
 }
 
-/*==== sub-rede pública ====*/
+/*==== sub-redes públicas ====*/
 resource "aws_subnet" "public_subnet" {
+    count                   = length(var.public_subnet_cidrs)
     vpc_id                  = aws_vpc.vpc.id
-    cidr_block              = var.public_subnet_cidrs
+    cidr_block              = var.public_subnet_cidrs[count.index]
     map_public_ip_on_launch = true
-    availability_zone       = var.a_zone
+    availability_zone       = var.a_zones[count.index]
     tags = {
-      Name                  = "sub-rede-publica-optimiza"
+      Name                  = "sub-rede-publica-optimiza-${count.index + 1}"
     }  
 }
 
-/*==== sub-rede privada ======*/
+/*==== sub-redes privadas ======*/
 resource "aws_subnet" "private_subnet" {
+    count                   = length(var.private_subnet_cidrs)
     vpc_id                  = aws_vpc.vpc.id
-    cidr_block              = var.private_subnet_cidrs
-    availability_zone       = var.a_zone
+    cidr_block              = var.private_subnet_cidrs[count.index]
+    availability_zone       = var.a_zones[count.index]
     tags = {
-      Name                  = "sub-rede-privada-optimiza"
+      Name                  = "sub-rede-privada-optimiza-${count.index + 1}"
     }  
 }
 
@@ -69,8 +71,9 @@ resource "aws_route_table" "public_rt" {
  }
 }
 resource "aws_route_table_association" "public" {
+    count                   = length(aws_subnet.public_subnet)
     route_table_id          = aws_route_table.public_rt.id
-    subnet_id               = aws_subnet.public_subnet.id
+    subnet_id               = aws_subnet.public_subnet[count.index].id
 }
 
 /*==== tabela de rota privada ====*/
@@ -85,14 +88,15 @@ resource "aws_route_table" "private_rt" {
     }
 }
 resource "aws_route_table_association" "private" {
+    count                   = length(aws_subnet.private_subnet)
     route_table_id          = aws_route_table.private_rt.id
-    subnet_id               = aws_subnet.private_subnet.id
+    subnet_id               = aws_subnet.private_subnet[count.index].id
 }
 
 /*==== criando ACL ====*/ 
 resource "aws_network_acl" "acl_publica" {
   vpc_id                    = aws_vpc.vpc.id
-  subnet_ids                = [ aws_subnet.public_subnet.id]
+  subnet_ids                = aws_subnet.public_subnet[*].id
   ingress { # permitindo SSH
     protocol                = "tcp"
     rule_no                 = 100
@@ -270,11 +274,17 @@ resource "aws_security_group" "mysql_sg" {
 }
 
 /*==== Outputs para exportar ====*/
+output "subnet_public_ids" {
+    value = aws_subnet.public_subnet[*].id
+}
+output "subnet_private_ids" {
+    value = aws_subnet.private_subnet[*].id
+}
 output "subnet_public_id" {
-    value = aws_subnet.public_subnet.id
+    value = aws_subnet.public_subnet[0].id
 }
 output "subnet_private_id" {
-    value = aws_subnet.private_subnet.id
+    value = aws_subnet.private_subnet[0].id
 }
 output "nat_id" {
     value = aws_nat_gateway.nat.id
