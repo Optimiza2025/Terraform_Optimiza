@@ -1,0 +1,33 @@
+# Terraform
+**/.terraform/*
+.terraform/*
+
+# State files
+*.tfstate
+*.tfstate.backup
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Sensitive variable files (uncomment if you don't want to commit these)
+# terraform.tfvars
+# *.auto.tfvars
+# *.tfvars
+# *.tfvars.json
+
+# Local CLI config
+.terraformrc
+terraform.rc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

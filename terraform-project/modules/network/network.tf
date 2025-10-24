@@ -153,7 +153,7 @@ resource "aws_network_acl" "acl_publica" {
 
 resource "aws_network_acl" "acl_privada" {
   vpc_id                    = aws_vpc.vpc.id
-  subnet_ids                = [ aws_subnet.private_subnet.id ]
+  subnet_ids                = aws_subnet.private_subnet[*].id
   ingress {
     protocol                = "tcp"
     rule_no                 = 100
