@@ -1,1 +1,1 @@
-email_list = ["paola.gomes@sptech.school"]
+email_list = ["guilherme.gsantos@sptech.school"]

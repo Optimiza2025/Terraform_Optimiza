@@ -1,36 +1,51 @@
+#############################################
+# Prefixo aleatório para nome único da Lambda
+#############################################
 resource "random_id" "lambda_prefix" {
   byte_length = 4
 }
 
+#############################################
+# Nome da função Lambda
+#############################################
 locals {
   lambda_function_name = "${random_id.lambda_prefix.hex}-etl-csv"
 }
 
+#############################################
+# Função Lambda para processamento de CSVs
+#############################################
 resource "aws_lambda_function" "process_csv" {
-  function_name = local.lambda_function_name
-  handler       = "lambda_handler.lambda_handler"
-  runtime       = "python3.9"
-  role          = "arn:aws:iam::654654309976:role/LabRole" #colocar o arn da role de Lab
-  filename      = "${path.module}/lambda_function/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda_function/lambda.zip")
-  timeout       = 90
+  function_name    = local.lambda_function_name
+  handler          = "lambda_handler.lambda_handler"
+  runtime          = "python3.9"
 
-  # camada do pandas
+  # ARN da role que a Lambda usará
+  # Substitua se necessário por outra role com permissões de execução Lambda
+  role             = "arn:aws:iam::730335189128:role/LabRole"
+
+  filename         = "${path.module}/lambda_function/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambda_function/lambda.zip")
+  timeout          = 90
+
+  # Camada Pandas compatível com Python 3.9
   layers = [
     "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:28"
   ]
 
+  # Variáveis de ambiente
   environment {
     variables = {
-        BUCKET_DESTINO = var.trusted_name
-        SNS_TOPIC_ARN = var.topic_arn
-        EMAIL_LIST = jsonencode(var.email_list)
+      BUCKET_DESTINO = var.trusted_name
+      SNS_TOPIC_ARN  = var.topic_arn
+      EMAIL_LIST     = jsonencode(var.email_list)
     }
   }
-
 }
 
+#############################################
 # Permitir que o S3 invoque a Lambda
+#############################################
 resource "aws_lambda_permission" "allow_s3" {
   statement_id  = "AllowS3Invoke"
   action        = "lambda:InvokeFunction"
@@ -39,7 +54,9 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = var.raw_arn
 }
 
-# Trigger: evento no S3 aciona o Lambda
+#############################################
+# Notificação S3 → Trigger Lambda (.csv)
+#############################################
 resource "aws_s3_bucket_notification" "bucket_trigger" {
   bucket = var.raw_name
 
@@ -49,5 +66,6 @@ resource "aws_s3_bucket_notification" "bucket_trigger" {
     filter_suffix       = ".csv"
   }
 
+  # Garante que a permissão S3 → Lambda seja criada antes do vínculo
   depends_on = [aws_lambda_permission.allow_s3]
 }

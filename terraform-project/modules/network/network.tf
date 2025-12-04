@@ -129,6 +129,14 @@ resource "aws_network_acl" "acl_publica" {
     from_port               = 32000
     to_port                 = 65535
   }
+  ingress { 
+    protocol    = "udp"
+    rule_no     = 410 
+    action      = "allow"
+    cidr_block  = "0.0.0.0/0"
+    from_port   = 1024  
+    to_port     = 65535
+  }
   egress { # Permite saída para todo tráfego
     protocol                = "-1"
     rule_no                 = 100
@@ -170,6 +178,14 @@ resource "aws_network_acl" "acl_privada" {
     from_port               = 80
     to_port                 = 80
   }  
+  ingress { 
+    protocol   = "tcp"
+    rule_no    = 210  
+    action     = "allow"
+    cidr_block = aws_vpc.vpc.cidr_block 
+    from_port  = 3000
+    to_port    = 3000
+  }
   ingress {
     protocol                = "tcp"
     rule_no                 = 300
@@ -177,6 +193,14 @@ resource "aws_network_acl" "acl_privada" {
     cidr_block              = "0.0.0.0/0"
     from_port               = 32000
     to_port                 = 65535
+  }
+  ingress { 
+    protocol    = "udp"
+    rule_no     = 310 
+    action      = "allow"
+    cidr_block  = "0.0.0.0/0"
+    from_port   = 1024 
+    to_port     = 65535
   }
   egress {
     protocol                = "-1"
@@ -190,18 +214,11 @@ resource "aws_network_acl" "acl_privada" {
   protocol    = "tcp"
   rule_no     = 250
   action      = "allow"
-  cidr_block  = "10.0.0.0/24" # ou o bloco da subnet pública
+  cidr_block  = "10.0.0.0/24" 
   from_port   = 3306
   to_port     = 3306
 }
-egress {
-  protocol    = "tcp"
-  rule_no     = 250
-  action      = "allow"
-  cidr_block  = "10.0.0.0/24"
-  from_port   = 3306
-  to_port     = 3306
-}
+
   tags = {
     Name                    = "acl_privada"
   }
@@ -223,6 +240,13 @@ resource "aws_security_group" "sg" {
     to_port                 = "80"
     protocol                = "tcp"
     cidr_blocks             = ["0.0.0.0/0"]
+  }
+  ingress {
+  from_port       = 80
+  to_port         = 80
+  protocol        = "tcp"
+  cidr_blocks     = ["10.0.0.0/24"] # sua VPC
+  description     = "Permitir trafego interno via ALB"
   }
   ingress {
     from_port               = "443"

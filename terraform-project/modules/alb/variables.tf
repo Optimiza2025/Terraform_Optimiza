@@ -1,19 +1,19 @@
 variable "vpc_id" {
-  description = "ID da VPC"
+  description = "ID da VPC onde o ALB será criado"
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "IDs das subnets públicas para o ALB"
+  description = "Lista de subnets públicas do ALB"
   type        = list(string)
-}
-
-variable "security_group_id" {
-  description = "ID do Security Group"
-  type        = string
 }
 
 variable "target_instances" {
-  description = "Lista dos IDs das instâncias EC2 para o target group"
+  description = "Lista de IDs das instâncias EC2 que o ALB irá balancear"
   type        = list(string)
+}
+
+variable "grafana_instance_id" {
+  description = "ID da instância Grafana para o Target Group"
+  type        = string
 }
