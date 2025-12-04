@@ -49,41 +49,55 @@ module "lambda" {
 }
 
 # ============================================================================
-# REGRAS DE SEGURANÇA
+# REGRAS DE SEGURANÇA (CENTRALIZADAS)
 # ============================================================================
 
-# 1. Permite que o ALB (Origem) acesse as EC2s Públicas (Destino) na porta 80
-# ISSO É ESSENCIAL PARA EVITAR O 504
-resource "aws_security_group_rule" "alb_to_public_ec2s" {
+# --- REGRAS PARA AS EC2s PÚBLICAS (APP/BASTION) ---
+
+# 1. SSH (Permite acesso para você entrar)
+resource "aws_security_group_rule" "ssh_public" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"] # Idealmente, restrinja ao seu IP
+  security_group_id = module.net.sg_id
+  description       = "SSH Publico"
+}
+
+# 2. HTTP vindo do ALB (A Regra que corrige o Timeout)
+resource "aws_security_group_rule" "alb_to_app" {
   type                     = "ingress"
   from_port                = 80
   to_port                  = 80
   protocol                 = "tcp"
-  security_group_id        = module.net.sg_id      # SG das EC2s (Destino)
-  source_security_group_id = module.alb.alb_sg_id  # SG do ALB (Origem)
-  description              = "Permite trafego do ALB"
+  source_security_group_id = module.alb.alb_sg_id # Vindo do ALB
+  security_group_id        = module.net.sg_id
+  description              = "Trafego do ALB para Nginx"
 }
 
-# 2. Permite que as EC2s Públicas (Origem) acessem o MySQL (Destino) na porta 3306
+# --- REGRAS PARA O BANCO DE DADOS (PRIVADO) ---
+
+# 3. MySQL vindo das Apps (EC2s Públicas)
 resource "aws_security_group_rule" "app_to_db" {
   type                     = "ingress"
   from_port                = 3306
   to_port                  = 3306
   protocol                 = "tcp"
-  security_group_id        = module.net.mysql_sg_id # SG do Banco (Destino)
-  source_security_group_id = module.net.sg_id       # SG das EC2s (Origem)
-  description              = "Permite Apps acessarem Banco"
+  source_security_group_id = module.net.sg_id      # Vindo das Apps
+  security_group_id        = module.net.mysql_sg_id
+  description              = "Acesso App ao Banco"
 }
 
-# 3. Permite SSH do Bastion (EC2s Públicas) para o MySQL
-resource "aws_security_group_rule" "bastion_to_db_ssh" {
+# 4. SSH vindo do Bastion (Para você gerenciar o banco)
+resource "aws_security_group_rule" "bastion_to_db" {
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  security_group_id        = module.net.mysql_sg_id 
-  source_security_group_id = module.net.sg_id       
-  description              = "Permite SSH do Bastion"
+  source_security_group_id = module.net.sg_id      # Vindo do Bastion
+  security_group_id        = module.net.mysql_sg_id
+  description              = "SSH do Bastion"
 }
 
 # Outputs

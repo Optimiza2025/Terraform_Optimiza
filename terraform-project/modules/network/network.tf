@@ -230,26 +230,20 @@ resource "aws_network_acl" "acl_privada" {
   }
 }
 
-# Security Groups BASE
+# --- SECURITY GROUPS  ---
 resource "aws_security_group" "sg" {
   name        = "basic_security"
-  description = "SG para EC2s Publicas (Nginx/Bastion)"
+  description = "SG para EC2s Publicas (App/Bastion)"
   vpc_id      = aws_vpc.vpc.id
 
-  # SSH (Idealmente restrinja ao seu IP)
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
+  # Saída liberada para instalar pacotes/updates
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   tags = {
     Name = "optimiza-public-ec2-sg"
   }
@@ -260,12 +254,14 @@ resource "aws_security_group" "mysql_sg" {
   description = "SG para o Banco de Dados MySQL"
   vpc_id      = aws_vpc.vpc.id
 
+  # Saída liberada
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   tags = {
     Name = "optimiza-mysql-sg"
   }
