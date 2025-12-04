@@ -13,6 +13,14 @@ locals {
 }
 
 #############################################
+# BUSCAR A ROLE EXISTENTE DINAMICAMENTE
+# (Isso evita o erro de conta errada)
+#############################################
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
+
+#############################################
 # Função Lambda para processamento de CSVs
 #############################################
 resource "aws_lambda_function" "process_csv" {
@@ -20,9 +28,7 @@ resource "aws_lambda_function" "process_csv" {
   handler          = "lambda_handler.lambda_handler"
   runtime          = "python3.9"
 
-  # ARN da role que a Lambda usará
-  # Substitua se necessário por outra role com permissões de execução Lambda
-  role             = "arn:aws:iam::730335189128:role/LabRole"
+  role             = data.aws_iam_role.lab_role.arn
 
   filename         = "${path.module}/lambda_function/lambda.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda_function/lambda.zip")
@@ -66,6 +72,5 @@ resource "aws_s3_bucket_notification" "bucket_trigger" {
     filter_suffix       = ".csv"
   }
 
-  # Garante que a permissão S3 → Lambda seja criada antes do vínculo
   depends_on = [aws_lambda_permission.allow_s3]
 }

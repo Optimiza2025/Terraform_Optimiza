@@ -27,4 +27,3 @@ output "alb_sg_id" {
   description = "ID do Security Group usado pelo ALB"
   value       = aws_security_group.alb_sg.id
 }
-
