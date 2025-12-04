@@ -77,77 +77,20 @@ resource "aws_network_acl" "acl_publica" {
   vpc_id     = aws_vpc.vpc.id
   subnet_ids = aws_subnet.public_subnet[*].id
 
-  # Ingress Rules (Entrada)
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 100
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 22
-    to_port    = 22
-  }
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 200
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 80
-    to_port    = 80
-  }
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 300
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 443
-    to_port    = 443
-  }
-  # Portas efêmeras (Retorno de tráfego)
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 400
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 1024
-    to_port    = 65535
-  }
-  ingress {
-    protocol   = "udp"
-    rule_no    = 410
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 1024
-    to_port    = 65535
-  }
+  # Entradas Permitidas
+  ingress { protocol = "tcp"; rule_no = 100; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 22; to_port = 22; }   # SSH
+  ingress { protocol = "tcp"; rule_no = 200; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 80; to_port = 80; }   # HTTP
+  ingress { protocol = "tcp"; rule_no = 300; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 443; to_port = 443; } # HTTPS
+  
+  # Retorno de tráfego (Ephemeral Ports) - Crucial para não dar timeout
+  ingress { protocol = "tcp"; rule_no = 400; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 1024; to_port = 65535; }
+  ingress { protocol = "udp"; rule_no = 410; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 1024; to_port = 65535; }
+  
   # ICMP (Ping)
-  ingress {
-    protocol   = "icmp"
-    rule_no    = 450
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 0
-    to_port    = 0
-    icmp_type  = -1
-    icmp_code  = -1
-  }
-  ingress { # Django Dev
-    protocol   = "tcp"
-    rule_no    = 500
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 8000
-    to_port    = 8000
-  }
+  ingress { protocol = "icmp"; rule_no = 450; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 0; to_port = 0; icmp_type = -1; icmp_code = -1; }
 
-  # Egress Rules (Saída)
-  egress {
-    protocol   = "-1"
-    rule_no    = 100
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 0
-    to_port    = 0
-  }
+  # Saída Total
+  egress { protocol = "-1"; rule_no = 100; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 0; to_port = 0; }
 
   tags = { Name = "acl_publica_optimiza" }
 }
@@ -156,83 +99,33 @@ resource "aws_network_acl" "acl_privada" {
   vpc_id     = aws_vpc.vpc.id
   subnet_ids = aws_subnet.private_subnet[*].id
 
-  # Ingress Rules (Entrada)
-  ingress { # SSH da VPC
-    protocol   = "tcp"
-    rule_no    = 100
-    action     = "allow"
-    cidr_block = "10.0.0.0/24"
-    from_port  = 22
-    to_port    = 22
-  }
-  ingress { # HTTP da VPC (interno)
-    protocol   = "tcp"
-    rule_no    = 200
-    action     = "allow"
-    cidr_block = "10.0.0.0/24"
-    from_port  = 80
-    to_port    = 80
-  }
+  # Entradas Permitidas (Somente Interno da VPC)
+  ingress { protocol = "tcp"; rule_no = 100; action = "allow"; cidr_block = "10.0.0.0/24"; from_port = 22; to_port = 22; }   # SSH Interno
+  ingress { protocol = "tcp"; rule_no = 200; action = "allow"; cidr_block = "10.0.0.0/24"; from_port = 80; to_port = 80; }   # HTTP Interno
+  ingress { protocol = "tcp"; rule_no = 250; action = "allow"; cidr_block = "10.0.0.0/24"; from_port = 3306; to_port = 3306; } # MySQL Interno
   
-  ingress { # MySQL (3306) da VPC
-    protocol   = "tcp"
-    rule_no    = 250
-    action     = "allow"
-    cidr_block = "10.0.0.0/24"
-    from_port  = 3306
-    to_port    = 3306
-  }
-  # Retorno de tráfego (Portas efêmeras)
-  ingress {
-    protocol   = "tcp"
-    rule_no    = 300
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 1024
-    to_port    = 65535
-  }
-  ingress {
-    protocol   = "udp"
-    rule_no    = 310
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 1024
-    to_port    = 65535
-  }
+  # Retorno de tráfego (Ephemeral Ports)
+  ingress { protocol = "tcp"; rule_no = 300; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 1024; to_port = 65535; }
+  ingress { protocol = "udp"; rule_no = 310; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 1024; to_port = 65535; }
 
-  # Egress Rules (Saída)
-  egress {
-    protocol   = "-1"
-    rule_no    = 100
-    action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 0
-    to_port    = 0
-  }
+  # Saída Total (Para NAT Gateway)
+  egress { protocol = "-1"; rule_no = 100; action = "allow"; cidr_block = "0.0.0.0/0"; from_port = 0; to_port = 0; }
 
   tags = { Name = "acl_privada_optimiza" }
 }
 
-# Security Groups Base
+# Security Groups BASE
 resource "aws_security_group" "sg" {
   name        = "basic_security"
   description = "SG para EC2s Publicas (Nginx/Bastion)"
   vpc_id      = aws_vpc.vpc.id
 
-  # SSH (Idealmente restrinja ao seu IP)
+  # SSH (Acesso de Admin) - Idealmente troque 0.0.0.0/0 pelo seu IP
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] 
-  }
-  
-  # Django Dev
-  ingress {
-      from_port = 8000
-      to_port = 8000
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -241,7 +134,6 @@ resource "aws_security_group" "sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
   tags = { Name = "optimiza-public-ec2-sg" }
 }
 
@@ -250,7 +142,6 @@ resource "aws_security_group" "mysql_sg" {
   description = "SG para o Banco de Dados MySQL"
   vpc_id      = aws_vpc.vpc.id
 
-  # Ingress (Regras adicionadas via main.tf)
 
   egress {
     from_port   = 0
@@ -258,6 +149,5 @@ resource "aws_security_group" "mysql_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
   tags = { Name = "optimiza-mysql-sg" }
 }
