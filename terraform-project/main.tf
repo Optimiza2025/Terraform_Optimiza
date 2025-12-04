@@ -22,7 +22,7 @@ module "ec2" {
   private_subnet_ids = module.net.subnet_private_ids
   sg_id              = module.net.sg_id
   mysql_sg_id        = module.net.mysql_sg_id
-  vpc_id             = module.net.vpc_id # IMPORTANTE
+  vpc_id             = module.net.vpc_id
 }
 
 module "alb" {
@@ -30,14 +30,11 @@ module "alb" {
 
   vpc_id     = module.net.vpc_id
   subnet_ids = module.net.subnet_public_ids
-  
-  # Note: Removemos 'alb_security_group_id' daqui, pois o módulo cria o seu próprio.
 
   target_instances = [
     module.ec2.ec2_public_1_id,
     module.ec2.ec2_public_2_id
   ]
-  grafana_instance_id = module.ec2.grafana_instance_id
 }
 
 module "s3" { source = "./modules/s3" }
@@ -57,7 +54,7 @@ module "lambda" {
 }
 
 # ============================================================================
-# REGRAS DE SEGURANÇA INTER-MÓDULOS (CRUCIAL!)
+# REGRAS DE SEGURANÇA INTER-MÓDULOS
 # ============================================================================
 
 # 1. ALB -> EC2s Públicas (Nginx :80)
@@ -71,29 +68,7 @@ resource "aws_security_group_rule" "alb_to_public_ec2s" {
   description              = "Permite ALB acessar Nginx"
 }
 
-# 2. ALB -> Grafana (:3000)
-resource "aws_security_group_rule" "alb_to_grafana" {
-  type                     = "ingress"
-  from_port                = 3000
-  to_port                  = 3000
-  protocol                 = "tcp"
-  security_group_id        = module.ec2.grafana_sg_id # Destino: Grafana
-  source_security_group_id = module.alb.alb_sg_id     # Origem: ALB
-  description              = "Permite ALB acessar Grafana"
-}
-
-# 3. Grafana -> MySQL (:3306)
-resource "aws_security_group_rule" "grafana_to_db" {
-  type                     = "ingress"
-  from_port                = 3306
-  to_port                  = 3306
-  protocol                 = "tcp"
-  security_group_id        = module.net.mysql_sg_id   # Destino: MySQL
-  source_security_group_id = module.ec2.grafana_sg_id # Origem: Grafana
-  description              = "Permite Grafana acessar Banco"
-}
-
-# 4. EC2s Públicas (Apps) -> MySQL (:3306)
+# 2. EC2s Públicas (Apps) -> MySQL (:3306)
 resource "aws_security_group_rule" "app_to_db" {
   type                     = "ingress"
   from_port                = 3306
@@ -104,18 +79,7 @@ resource "aws_security_group_rule" "app_to_db" {
   description              = "Permite Apps acessarem Banco"
 }
 
-# 5. EC2s Públicas (Bastion) -> Grafana (SSH :22)
-resource "aws_security_group_rule" "bastion_to_grafana_ssh" {
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  security_group_id        = module.ec2.grafana_sg_id # Destino: Grafana
-  source_security_group_id = module.net.sg_id         # Origem: EC2s Públicas
-  description              = "Permite SSH do Bastion"
-}
-
-# 6. EC2s Públicas (Bastion) -> MySQL (SSH :22)
+# 3. EC2s Públicas (Bastion) -> MySQL (SSH :22)
 resource "aws_security_group_rule" "bastion_to_db_ssh" {
   type                     = "ingress"
   from_port                = 22

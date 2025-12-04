@@ -1,6 +1,4 @@
-# modules/alb/main.tf
-
-# Security Group do ALB (Definido AQUI para ser autocontido)
+# Security Group do ALB
 resource "aws_security_group" "alb_sg" {
   name        = "optimiza-alb-sg"
   description = "Allow HTTP and HTTPS from Internet"
@@ -31,7 +29,7 @@ resource "aws_lb" "app_lb" {
   name               = "optimiza-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id] # Usa o SG criado acima
+  security_groups    = [aws_security_group.alb_sg.id]
   subnets            = var.subnet_ids
 
   enable_deletion_protection = false
@@ -69,13 +67,13 @@ resource "aws_lb_target_group" "frontend_tg" {
 # 2. Django (Nginx -> Gunicorn :8000)
 resource "aws_lb_target_group" "django_tg" {
   name     = "optimiza-django-tg"
-  port     = 80 # O ALB fala com o Nginx na 80, que faz proxy_pass para 8000
+  port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
     enabled = true
-    path    = "/chamado/" # Caminho que o Nginx roteia para o Django
+    path    = "/chamado/"
     matcher = "200"
   }
 }
@@ -83,33 +81,14 @@ resource "aws_lb_target_group" "django_tg" {
 # 3. Spring Boot (Nginx -> Java :8080)
 resource "aws_lb_target_group" "spring_tg" {
   name     = "optimiza-spring-tg"
-  port     = 80 # O ALB fala com o Nginx na 80, que faz proxy_pass para 8080
+  port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
     enabled = true
-    # Opção A (Recomendada se tiver endpoint):
-    path    = "/optimiza/usuarios/areas" # Um endpoint real da API
-    matcher = "200,404,401" # Aceita erros de 'not found' ou 'auth' como sinal de vida
-    
-    # Opção B (Se não tiver endpoint fácil):
-    # path    = "/optimiza/"
-    # matcher = "200,404"
-  }
-}
-
-# 4. Grafana (:3000)
-resource "aws_lb_target_group" "grafana_tg" {
-  name     = "optimiza-grafana-tg"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-
-  health_check {
-    enabled = true
-    path    = "/api/health"
-    matcher = "200"
+    path    = "/optimiza/usuarios/areas"
+    matcher = "200,404,401"
   }
 }
 
@@ -136,12 +115,6 @@ resource "aws_lb_target_group_attachment" "spring_attach" {
   port             = 80
 }
 
-resource "aws_lb_target_group_attachment" "grafana_attach" {
-  target_group_arn = aws_lb_target_group.grafana_tg.arn
-  target_id        = var.grafana_instance_id
-  port             = 3000
-}
-
 # --- Listener Rules ---
 
 resource "aws_lb_listener_rule" "django_rule" {
@@ -165,17 +138,5 @@ resource "aws_lb_listener_rule" "spring_rule" {
   }
   condition {
     path_pattern { values = ["/optimiza/*"] }
-  }
-}
-
-resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = aws_lb_listener.app_listener.arn
-  priority     = 30
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
-  }
-  condition {
-    path_pattern { values = ["/grafana/*"] }
   }
 }
