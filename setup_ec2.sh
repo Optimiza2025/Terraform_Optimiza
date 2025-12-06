@@ -117,7 +117,7 @@ fi
 sudo chown -R www-data:www-data /var/www/optimiza/html
 
 # Cria a configuração do Nginx (servindo front e staticfiles do django)
-sudo bash -c 'cat > /etc/nginx/sites-available/default' << EOF
+sudo bash -c 'cat > /etc/nginx/sites-available/default' << 'EOF'
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -131,14 +131,14 @@ server {
 
     # 2. Rota do Django
     location /chamado/ {
-        proxy_pass http://127.0.0.1:8000; # Envia para o Gunicorn
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 
     # 3. Rota do Spring (Kotlin)
     location /optimiza/ {
-        proxy_pass http://127.0.0.1:8080; # Envia para o Spring Boot
+        proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
